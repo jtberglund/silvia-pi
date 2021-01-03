@@ -6,8 +6,8 @@ def scheduler(dummy,state):
   import schedule
   from datetime import datetime
 
-  sys.stdout = open("scheduler.log", "a", buffering=0)
-  sys.stderr = open("scheduler.err.log", "a", buffering=0)
+  sys.stdout = open("scheduler.log", "a")
+  sys.stderr = open("scheduler.err.log", "a")
 
   print("Starting scheduler thread ...")
 
@@ -111,8 +111,8 @@ def pid_loop(dummy,state):
   import PID as PID
   import config as conf
 
-  sys.stdout = open("pid.log", "a", buffering=0)
-  sys.stderr = open("pid.err.log", "a", buffering=0)
+  sys.stdout = open("pid.log", "a")
+  sys.stderr = open("pid.err.log", "a")
 
   def c_to_f(c):
     return c * 9.0 / 5.0 + 32.0
