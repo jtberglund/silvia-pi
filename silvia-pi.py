@@ -198,7 +198,7 @@ def pid_loop(dummy,state):
         state['dterm'] = round(pid.DTerm * conf.Dw,2)
       state['iscold'] = iscold
 
-      print(time(), state)
+      print((time(), state))
 
       sleeptime = lasttime+conf.sample_time-time()
       if sleeptime < 0 :
@@ -306,7 +306,7 @@ def rest_server(dummy,state):
 if __name__ == '__main__':
   from multiprocessing import Process, Manager
   from time import sleep
-  from urllib2 import urlopen
+  from urllib.request import urlopen
   import config as conf
 
   manager = Manager()
