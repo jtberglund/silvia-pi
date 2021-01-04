@@ -110,7 +110,7 @@ def pid_loop(dummy,state):
   from math import isnan
   import Adafruit_GPIO.SPI as SPI
   # import Adafruit_MAX31855.MAX31855 as MAX31855
-  import Adafruit_MAX31855
+  import adafruit_max31855
   import busio
   import board
   import digitalio
@@ -126,7 +126,7 @@ def pid_loop(dummy,state):
   print('Setting up thermocouple interface...')
   spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
   cs = digitalio.DigitalInOut(board.D5)
-  sensor = Adafruit_MAX31855.MAX31855(spi, cs)
+  sensor = adafruit_max31855.MAX31855(spi=spi, cs=cs)
   # sensor = MAX31855.MAX31855(spi=SPI.SpiDev(conf.spi_port, conf.spi_dev))
 
   print('Setting up PID...')

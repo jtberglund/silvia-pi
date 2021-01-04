@@ -20,8 +20,8 @@ python3 setup.py install
 
 echo "Installing MAX31855 Thermocouple Amp library..."
 cd ~
-git clone https://github.com/adafruit/Adafruit_Python_MAX31855.git
-cd ~/Adafruit_Python_MAX31855
+git clone https://github.com/adafruit/Adafruit_CircuitPython_MAX31855.git
+cd ~/Adafruit_CircuitPython_MAX31855
 python3 setup.py install
 
 echo "Installing ivPID library..."
