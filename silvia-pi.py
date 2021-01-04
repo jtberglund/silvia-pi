@@ -107,7 +107,7 @@ def he_control_loop(dummy,state):
 def pid_loop(dummy,state):
   import sys
   from time import sleep, time
-  from math import isnan
+  from math import isnan, floor
   import Adafruit_GPIO.SPI as SPI
   # import Adafruit_MAX31855.MAX31855 as MAX31855
   import adafruit_max31855
@@ -190,7 +190,7 @@ def pid_loop(dummy,state):
       if i%10 == 0 :
         pid.update(avgtemp)
         pidout = pid.output
-        pidhist[i/10%10] = pidout
+        pidhist[floor(i/10)%10] = pidout
         avgpid = sum(pidhist)/len(pidhist)
 
       state['i'] = i
@@ -398,6 +398,7 @@ if __name__ == '__main__':
       r.terminate()
 
     weberrflag = 0
+    weberr = 0
 
     sleep(1)
 
