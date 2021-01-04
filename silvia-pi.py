@@ -123,11 +123,13 @@ def pid_loop(dummy,state):
   def c_to_f(c):
     return c * 9.0 / 5.0 + 32.0
 
+  print('Setting up thermocouple interface...')
   spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
   cs = digitalio.DigitalInOut(board.D5)
   sensor = Adafruit_MAX31855.MAX31855(spi, cs)
   # sensor = MAX31855.MAX31855(spi=SPI.SpiDev(conf.spi_port, conf.spi_dev))
 
+  print('Setting up PID...')
   pid = PID.PID(conf.Pc,conf.Ic,conf.Dc)
   pid.SetPoint = state['settemp']
   pid.setSampleTime(conf.sample_time*5)
@@ -147,6 +149,7 @@ def pid_loop(dummy,state):
   lastcold = 0
   lastwarm = 0
 
+  print('Starting PID loop...')
   try:
     while True : # Loops 10x/second
       tempc = sensor.temperature
@@ -212,6 +215,12 @@ def pid_loop(dummy,state):
       sleep(sleeptime)
       i += 1
       lasttime = time()
+
+  except Exception as ex:
+    print('PID thread loop error')
+    print(type(ex))
+    print(ex.args)
+    print(ex)
 
   finally:
     pid.clear
