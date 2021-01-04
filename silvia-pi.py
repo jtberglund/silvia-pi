@@ -94,6 +94,12 @@ def he_control_loop(dummy,state):
           state['heating'] = False
           sleep(1)
 
+  except Exception as ex:
+    print('GPIO error')
+    print(type(ex))
+    print(ex.args)
+    print(ex)
+
   finally:
     GPIO.output(conf.he_pin,0)
     GPIO.cleanup()
@@ -385,3 +391,9 @@ if __name__ == '__main__':
     weberrflag = 0
 
     sleep(1)
+
+print('Silvia PI exiting...')
+print('Scheduler thread alive', s.is_alive())
+print('PID thread alive', p.is_alive())
+print('HE control thread alive', h.is_alive())
+print('REST server thread alive', r.is_alive())
