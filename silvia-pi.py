@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 def scheduler(dummy,state):
   import time
@@ -348,6 +348,11 @@ if __name__ == '__main__':
 
   lasti = pidstate['i']
   sleep(1)
+
+  print('Scheduler process is alive', s.is_alive())
+  print('PID process is alive', p.is_alive())
+  print('HE control process is alive', h.is_alive())
+  print('REST server process is alive', r.is_alive())
 
   while p.is_alive() and h.is_alive() and r.is_alive() and s.is_alive():
     curi = pidstate['i']
