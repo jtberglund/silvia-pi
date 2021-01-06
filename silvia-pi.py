@@ -10,7 +10,7 @@ def scheduler(dummy,state):
   sys.stderr = open("scheduler.err.log", "a")
  
   with open('scheduler.log', 'a') as schedulerLog, open('scheduler.err.log', 'a') as schedulerErrLog:
-    print("Starting scheduler thread...", file=scheduler)
+    print("Starting scheduler thread...", file=schedulerLog)
 
     last_wake = 0
     last_sleep = 0
