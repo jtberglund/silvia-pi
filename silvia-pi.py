@@ -8,49 +8,50 @@ def scheduler(dummy,state):
 
   sys.stdout = open("scheduler.log", "a")
   sys.stderr = open("scheduler.err.log", "a")
+ 
+  with open('scheduler.log', 'a') as schedulerLog, open('scheduler.err.log', 'a') as schedulerErrLog:
+    print("Starting scheduler thread...", file=scheduler)
 
-  print("Starting scheduler thread ...")
+    last_wake = 0
+    last_sleep = 0
+    last_sched_switch = 0
 
-  last_wake = 0
-  last_sleep = 0
-  last_sched_switch = 0
+    while True:
 
-  while True:
+      if last_wake != state['wake_time'] or last_sleep != state['sleep_time'] or last_sched_switch != state['sched_enabled']:
+        schedule.clear()
 
-    if last_wake != state['wake_time'] or last_sleep != state['sleep_time'] or last_sched_switch != state['sched_enabled']:
-      schedule.clear()
+        if state['sched_enabled'] == True:
+          schedule.every().day.at(state['sleep_time']).do(gotosleep,1,state)
+          schedule.every().day.at(state['wake_time']).do(wakeup,1,state)
 
-      if state['sched_enabled'] == True:
-        schedule.every().day.at(state['sleep_time']).do(gotosleep,1,state)
-        schedule.every().day.at(state['wake_time']).do(wakeup,1,state)
+          nowtm = float(datetime.now().hour) + float(datetime.now().minute)/60.
+          sleeptm = state['sleep_time'].split(":")
+          sleeptm = float(sleeptm[0]) + float(sleeptm[1])/60.
+          waketm = state['wake_time'].split(":")
+          waketm = float(waketm[0]) + float(waketm[1])/60.
 
-        nowtm = float(datetime.now().hour) + float(datetime.now().minute)/60.
-        sleeptm = state['sleep_time'].split(":")
-        sleeptm = float(sleeptm[0]) + float(sleeptm[1])/60.
-        waketm = state['wake_time'].split(":")
-        waketm = float(waketm[0]) + float(waketm[1])/60.
+          if waketm < sleeptm:
+            if nowtm >= waketm and nowtm < sleeptm:
+              wakeup(1,state)
+            else:
+              gotosleep(1,state)
+          elif waketm > sleeptm:
+            if nowtm < waketm and nowtm >= sleeptm:
+              gotosleep(1,state)
+            else:
+              wakeup(1,state)
 
-        if waketm < sleeptm:
-          if nowtm >= waketm and nowtm < sleeptm:
-            wakeup(1,state)
-          else:
-            gotosleep(1,state)
-        elif waketm > sleeptm:
-          if nowtm < waketm and nowtm >= sleeptm:
-            gotosleep(1,state)
-          else:
-            wakeup(1,state)
+        else:
+          wakeup(1,state)
 
-      else:
-        wakeup(1,state)
+      last_wake = state['wake_time']
+      last_sleep = state['sleep_time']
+      last_sched_switch = state['sched_enabled']
 
-    last_wake = state['wake_time']
-    last_sleep = state['sleep_time']
-    last_sched_switch = state['sched_enabled']
+      schedule.run_pending()
 
-    schedule.run_pending()
-
-    time.sleep(1)
+      time.sleep(1)
 
 def wakeup(dummy,state):
   state['is_awake'] = True
@@ -109,7 +110,6 @@ def pid_loop(dummy,state):
   from time import sleep, time
   from math import isnan, floor
   import Adafruit_GPIO.SPI as SPI
-  # import Adafruit_MAX31855.MAX31855 as MAX31855
   import adafruit_max31855
   import busio
   import board
@@ -123,107 +123,107 @@ def pid_loop(dummy,state):
   def c_to_f(c):
     return c * 9.0 / 5.0 + 32.0
 
-  print('Setting up thermocouple interface...')
-  spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
-  cs = digitalio.DigitalInOut(board.D5)
-  sensor = adafruit_max31855.MAX31855(spi=spi, cs=cs)
-  # sensor = MAX31855.MAX31855(spi=SPI.SpiDev(conf.spi_port, conf.spi_dev))
+  with open('pid.log', 'a') as pidLog, open('pid.err.log', 'a') as pidErrLog:
+    print('Setting up thermocouple interface...')
+    spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+    cs = digitalio.DigitalInOut(board.D8)
+    sensor = adafruit_max31855.MAX31855(spi=spi, cs=cs)
 
-  print('Setting up PID...')
-  pid = PID.PID(conf.Pc,conf.Ic,conf.Dc)
-  pid.SetPoint = state['settemp']
-  pid.setSampleTime(conf.sample_time*5)
+    print('Setting up PID...')
+    pid = PID.PID(conf.Pc,conf.Ic,conf.Dc)
+    pid.SetPoint = state['settemp']
+    pid.setSampleTime(conf.sample_time*5)
 
-  nanct=0
-  i=0
-  j=0
-  pidhist = [0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]
-  avgpid = 0.
-  temphist = [0.,0.,0.,0.,0.]
-  avgtemp = 0.
-  lastsettemp = state['settemp']
-  lasttime = time()
-  sleeptime = 0
-  iscold = True
-  iswarm = False
-  lastcold = 0
-  lastwarm = 0
+    nanct=0
+    i=0
+    j=0
+    pidhist = [0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]
+    avgpid = 0.
+    temphist = [0.,0.,0.,0.,0.]
+    avgtemp = 0.
+    lastsettemp = state['settemp']
+    lasttime = time()
+    sleeptime = 0
+    iscold = True
+    iswarm = False
+    lastcold = 0
+    lastwarm = 0
 
-  print('Starting PID loop...')
-  try:
-    while True : # Loops 10x/second
-      tempc = sensor.temperature
-      if isnan(tempc) :
-        nanct += 1
-        if nanct > 100000 :
-          sys.exit
-        continue
-      else:
-        nanct = 0
+    print('Starting PID loop...', file=pidLog)
+    try:
+      while True : # Loops 10x/second
+        tempc = sensor.temperature
+        if isnan(tempc) :
+          nanct += 1
+          if nanct > 100000 :
+            sys.exit
+          continue
+        else:
+          nanct = 0
 
-      tempf = c_to_f(tempc)
-      temphist[i%5] = tempf
-      avgtemp = sum(temphist)/len(temphist)
+        tempf = c_to_f(tempc)
+        temphist[i%5] = tempf
+        avgtemp = sum(temphist)/len(temphist)
 
-      if avgtemp < 100 :
-        lastcold = i
+        if avgtemp < 100 :
+          lastcold = i
 
-      if avgtemp > 200 :
-        lastwarm = i
+        if avgtemp > 200 :
+          lastwarm = i
 
-      if iscold and (i-lastcold)*conf.sample_time > 60*15 :
-        pid = PID.PID(conf.Pw,conf.Iw,conf.Dw)
-        pid.SetPoint = state['settemp']
-        pid.setSampleTime(conf.sample_time*5)
-        iscold = False
+        if iscold and (i-lastcold)*conf.sample_time > 60*15 :
+          pid = PID.PID(conf.Pw,conf.Iw,conf.Dw)
+          pid.SetPoint = state['settemp']
+          pid.setSampleTime(conf.sample_time*5)
+          iscold = False
 
-      if iswarm and (i-lastwarm)*conf.sample_time > 60*15 :
-        pid = PID.PID(conf.Pc,conf.Ic,conf.Dc)
-        pid.SetPoint = state['settemp']
-        pid.setSampleTime(conf.sample_time*5)
-        iscold = True
+        if iswarm and (i-lastwarm)*conf.sample_time > 60*15 :
+          pid = PID.PID(conf.Pc,conf.Ic,conf.Dc)
+          pid.SetPoint = state['settemp']
+          pid.setSampleTime(conf.sample_time*5)
+          iscold = True
 
-      if state['settemp'] != lastsettemp :
-        pid.SetPoint = state['settemp']
-        lastsettemp = state['settemp']
+        if state['settemp'] != lastsettemp :
+          pid.SetPoint = state['settemp']
+          lastsettemp = state['settemp']
 
-      if i%10 == 0 :
-        pid.update(avgtemp)
-        pidout = pid.output
-        pidhist[floor(i/10)%10] = pidout
-        avgpid = sum(pidhist)/len(pidhist)
+        if i%10 == 0 :
+          pid.update(avgtemp)
+          pidout = pid.output
+          pidhist[floor(i/10)%10] = pidout
+          avgpid = sum(pidhist)/len(pidhist)
 
-      state['i'] = i
-      state['tempf'] = round(tempf,2)
-      state['avgtemp'] = round(avgtemp,2)
-      state['pidval'] = round(pidout,2)
-      state['avgpid'] = round(avgpid,2)
-      state['pterm'] = round(pid.PTerm,2)
-      if iscold :
-        state['iterm'] = round(pid.ITerm * conf.Ic,2)
-        state['dterm'] = round(pid.DTerm * conf.Dc,2)
-      else :
-        state['iterm'] = round(pid.ITerm * conf.Iw,2)
-        state['dterm'] = round(pid.DTerm * conf.Dw,2)
-      state['iscold'] = iscold
+        state['i'] = i
+        state['tempf'] = round(tempf,2)
+        state['avgtemp'] = round(avgtemp,2)
+        state['pidval'] = round(pidout,2)
+        state['avgpid'] = round(avgpid,2)
+        state['pterm'] = round(pid.PTerm,2)
+        if iscold :
+          state['iterm'] = round(pid.ITerm * conf.Ic,2)
+          state['dterm'] = round(pid.DTerm * conf.Dc,2)
+        else :
+          state['iterm'] = round(pid.ITerm * conf.Iw,2)
+          state['dterm'] = round(pid.DTerm * conf.Dw,2)
+        state['iscold'] = iscold
 
-      print((time(), state))
+        # print((time(), state))
 
-      sleeptime = lasttime+conf.sample_time-time()
-      if sleeptime < 0 :
-        sleeptime = 0
-      sleep(sleeptime)
-      i += 1
-      lasttime = time()
+        sleeptime = lasttime+conf.sample_time-time()
+        if sleeptime < 0 :
+          sleeptime = 0
+        sleep(sleeptime)
+        i += 1
+        lasttime = time()
 
-  except Exception as ex:
-    print('PID thread loop error')
-    print(type(ex))
-    print(ex.args)
-    print(ex)
+    except Exception as ex:
+      print('PID thread loop error', file=pidErrLog)
+      print(type(ex), file=pidErrLog)
+      print(ex.args, file=pidErrLog)
+      print(ex, file=pidErrLog)
 
-  finally:
-    pid.clear
+    finally:
+      pid.clear
 
 def rest_server(dummy,state):
   from bottle import route, run, get, post, request, static_file, abort
