@@ -63,6 +63,7 @@ def he_control_loop(dummy,state):
   from time import sleep
   import RPi.GPIO as GPIO
   import config as conf
+  import sys
 
   GPIO.setmode(GPIO.BCM)
   GPIO.setup(conf.he_pin, GPIO.OUT)
