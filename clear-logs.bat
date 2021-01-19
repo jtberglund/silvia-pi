@@ -10,4 +10,4 @@
 
 : > silvia-pi.log
 
-rm ./**.log*gz
+rm -f ./**.log*gz
