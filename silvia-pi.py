@@ -70,40 +70,45 @@ def he_control_loop(dummy,state):
 
   heating = False
 
-  try:
-    while True:
-      avgpid = state['avgpid']
+  sys.stdout = open("he.log", "a")
+  sys.stderr = open("he.err.log", "a")
 
-      if state['is_awake'] == False :
-        state['heating'] = False
-        GPIO.output(conf.he_pin,0)
-        sleep(1)
-      else:
-        if avgpid >= 100 :
-          state['heating'] = True
-          GPIO.output(conf.he_pin,1)
-          sleep(1)
-        elif avgpid > 0 and avgpid < 100:
-          state['heating'] = True
-          GPIO.output(conf.he_pin,1)
-          sleep(avgpid/100.)
-          GPIO.output(conf.he_pin,0)
-          sleep(1-(avgpid/100.))
+  with open('he.log', 'a') as heLog, open('he.err.log', 'a') as heErrLog:
+    try:
+      while True:
+        avgpid = state['avgpid']
+
+        if state['is_awake'] == False :
           state['heating'] = False
+          GPIO.output(conf.he_pin,0)
+          sleep(1)
         else:
-          GPIO.output(conf.he_pin,0)
-          state['heating'] = False
-          sleep(1)
+          if avgpid >= 100 :
+            state['heating'] = True
+            GPIO.output(conf.he_pin,1)
+            sleep(1)
+          elif avgpid > 0 and avgpid < 100:
+            state['heating'] = True
+            GPIO.output(conf.he_pin,1)
+            sleep(avgpid/100.)
+            GPIO.output(conf.he_pin,0)
+            sleep(1-(avgpid/100.))
+            state['heating'] = False
+          else:
+            GPIO.output(conf.he_pin,0)
+            state['heating'] = False
+            sleep(1)
+        print(state, file=heLog)
 
-  except Exception as ex:
-    print('GPIO error')
-    print(type(ex))
-    print(ex.args)
-    print(ex)
+    except Exception as ex:
+      print('GPIO error', file=heErrLog)
+      print(type(ex), file=heErrLog)
+      print(ex.args, file=heErrLog)
+      print(ex, file=heErrLog)
 
-  finally:
-    GPIO.output(conf.he_pin,0)
-    GPIO.cleanup()
+    finally:
+      GPIO.output(conf.he_pin,0)
+      GPIO.cleanup()
 
 def pid_loop(dummy,state):
   import sys
